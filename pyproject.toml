@@ -1,0 +1,28 @@
+[build-system]
+requires = ["scikit-build-core", "torch>=2.7.0", "wheel"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "cudabox"
+version = "0.1.0"
+authors = [{ name = "Devashish Lal", email = "laldevashish@gmail.com" }]
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.wheel]
+exclude = [
+  "dist*",
+  "build*",
+  "tests*",
+]
+
+[tool.scikit-build]
+# minimum-version = "build-system.requires"
+cmake.args = [
+  "--preset=default",
+  "-GNinja"
+]
+
+wheel.py-api = "cp312"
+wheel.license-files = []
+wheel.packages = ["python/cudabox"]
