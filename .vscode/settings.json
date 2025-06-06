@@ -1,0 +1,6 @@
+{
+    "C_Cpp.default.compilerPath": "c:/program files/nvidia gpu computing toolkit/cuda/v12.8/bin/nvcc.exe",
+    "files.associations": {
+        "cmath": "cpp"
+    }
+}

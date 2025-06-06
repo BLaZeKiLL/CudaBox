@@ -1,17 +1,24 @@
 {
-  "configurations": [
-    {
-      "name": "Win32",
-      "windowsSdkVersion": "10.0.26100.0",
-      "compilerPath": "cl.exe",
-      "cStandard": "c17",
-      "cppStandard": "c++17",
-      "intelliSenseMode": "windows-msvc-x64",
-      "configurationProvider": "ms-vscode.cmake-tools",
-      "compileCommands": [
-        "${workspaceFolder}/build/compile_commands.json"
-      ]
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "name": "Win32",
+            "windowsSdkVersion": "10.0.26100.0",
+            "compilerPath": "c:/program files/nvidia gpu computing toolkit/cuda/v12.8/bin/nvcc.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64",
+            "includePath": [
+              "${workspaceFolder}/**",
+              "c:/program files/nvidia gpu computing toolkit/cuda/v12.8/include"
+            ],
+            "compileCommands": [
+                "${workspaceFolder}/build/compile_commands.json"
+            ],
+            "defines": [
+              "__CUDACC__"
+            ],
+            "configurationProvider": "ms-vscode.cmake-tools"
+        }
+    ],
+    "version": 4
 }

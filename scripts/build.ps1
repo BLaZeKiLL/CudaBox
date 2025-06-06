@@ -1,8 +1,8 @@
-Write-Output "BUILDING CUDABOX"
+Write-Host "BUILDING CUDABOX" -ForegroundColor Green
 uv build --wheel -Cbuild-dir=build . --verbose --color=always --no-build-isolation
-Write-Output "BUILD COMPLETE"
+Write-Host "BUILD COMPLETE" -ForegroundColor Green
 ls dist
 
-Write-Output "INSTALLING CUDABOX"
+Write-Host "INSTALLING CUDABOX" -ForegroundColor Green
 pip install (Get-ChildItem ./dist/cudabox*.whl).FullName --force-reinstall
-Write-Output "INSTALL COMPLETE"
+Write-Host "INSTALL COMPLETE" -ForegroundColor Green
