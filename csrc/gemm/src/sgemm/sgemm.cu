@@ -10,11 +10,14 @@ namespace cudabox::gemm
         // Index calculation for the grid
         unsigned int col = threadIdx.x + blockIdx.x * blockDim.x;
         unsigned int row = threadIdx.y + blockIdx.y * blockDim.y;
+
         // Boundary check
         if ((row >= M) || (col >= N)) return;
 
         T accumulator = {0};
 
+        // All linear indexes follow the following pattern
+        // linear_index = row_no * no_of_columns [i.e row width] + col_no
         for (int i = 0; i < K; i++) {
             accumulator += A[row * K + i] * B[i * N + col];
         }

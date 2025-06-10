@@ -19,8 +19,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 # CXX Flags
 set(CUDABOX_CXX_FLAGS
-    "/wd4267"
-    "/wd4244"
+    # "/wd4267"
+    # "/wd4244"
 )
 
 # CUDA
@@ -30,8 +30,8 @@ set_property(GLOBAL PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 # CUDA Flags
 set(CUDABOX_CUDA_FLAGS
-    "-Xcompiler=/wd4267"
-    "-Xcompiler=/wd4244"
+    # "-Xcompiler=/wd4267"
+    # "-Xcompiler=/wd4244"
     "--use_fast_math"
 )
 

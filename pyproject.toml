@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core", "torch>=2.7.0", "wheel"]
+requires = ["scikit-build-core>=0.11", "torch>=2.7.0", "wheel"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -17,10 +17,9 @@ exclude = [
 ]
 
 [tool.scikit-build]
-# minimum-version = "build-system.requires"
+minimum-version = "build-system.requires"
 cmake.args = [
-  "--preset=default",
-  "-GNinja"
+  "--preset=default-linux"
 ]
 
 wheel.py-api = "cp312"
