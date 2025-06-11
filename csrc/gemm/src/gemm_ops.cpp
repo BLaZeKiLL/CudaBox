@@ -2,8 +2,13 @@
 #include "python_utils.hpp"
 
 TORCH_LIBRARY_FRAGMENT(cudabox, m) {
-    m.def("sgemm(Tensor mat_a, Tensor mat_b) -> Tensor");
-    m.impl("sgemm", torch::kCUDA, &cudabox::gemm::sgemm);
+  // Simple Gemm
+  m.def("sgemm(Tensor mat_a, Tensor mat_b) -> Tensor");
+  m.impl("sgemm", torch::kCUDA, &cudabox::gemm::sgemm);
+
+  // Tilled Gemm
+  m.def("tgemm(Tensor mat_a, Tensor mat_b) -> Tensor");
+  m.impl("tgemm", torch::kCUDA, &cudabox::gemm::tgemm);
 }
 
 REGISTER_EXTENSION(gemm_ops)

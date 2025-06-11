@@ -4,19 +4,18 @@
     {
       "name": "base",
       "hidden": true,
-      "description": "Base congfig",
+      "description": "Base config",
       "binaryDir": "${sourceDir}/build",
       "generator": "Ninja",
       "cacheVariables": {
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
-      "name": "base-linux",
+      "name": "linux",
       "inherits": "base",
-      "hidden": true,
       "cacheVariables": {
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_CUDA_HOST_COMPILER": "clang++"
@@ -28,88 +27,11 @@
       }
     },
     {
-      "name": "default-linux",
-      "inherits": "base-linux",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
-    },
-    {
-      "name": "debug-linux",
-      "inherits": "base-linux",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
-    },
-    {
-      "name": "release-linux",
-      "inherits": "base-linux",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
-    },
-    {
-      "name": "base-windows",
+      "name": "windows",
       "inherits": "base",
-      "hidden": true,
       "architecture": {
         "value": "x64",
         "strategy": "external"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      }
-    },
-    {
-      "name": "default-windows",
-      "inherits": "base-windows",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      }
-    },
-    {
-      "name": "debug-windows",
-      "inherits": "base-windows",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      }
-    },
-    {
-      "name": "release-windows",
-      "inherits": "base-windows",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
       },
       "condition": {
         "type": "equals",
@@ -120,8 +42,8 @@
   ],
   "buildPresets": [
     {
-      "name": "base-linux",
-      "hidden": true,
+      "name": "linux",
+      "configurePreset": "linux",
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
@@ -129,68 +51,8 @@
       }
     },
     {
-      "name": "default-linux",
-      "inherits": "base-linux",
-      "configurePreset": "default-linux",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
-    },
-    {
-      "name": "debug-linux",
-      "inherits": "base-linux",
-      "configurePreset": "debug-linux",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
-    },
-    {
-      "name": "release-linux",
-      "inherits": "base-linux",
-      "configurePreset": "release-linux",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
-    },
-    {
-      "name": "base-windows",
-      "hidden": true,
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      }
-    },
-    {
-      "name": "default-windows",
-      "inherits": "base-windows",
-      "configurePreset": "default-windows",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      }
-    },
-    {
-      "name": "debug-windows",
-      "inherits": "base-windows",
-      "configurePreset": "debug-windows",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      }
-    },
-    {
-      "name": "release-windows",
-      "inherits": "base-windows",
-      "configurePreset": "release-windows",
+      "name": "windows",
+      "configurePreset": "windows",
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
