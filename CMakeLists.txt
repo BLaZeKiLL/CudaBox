@@ -19,8 +19,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 # CXX Flags
 set(CUDABOX_CXX_FLAGS
-    # "/wd4267"
-    # "/wd4244"
+
 )
 
 # CUDA
@@ -30,9 +29,7 @@ set_property(GLOBAL PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 # CUDA Flags
 set(CUDABOX_CUDA_FLAGS
-    # "-Xcompiler=/wd4267"
-    # "-Xcompiler=/wd4244"
-    "--use_fast_math"
+  "--use_fast_math"
 )
 
 # Torch
@@ -43,14 +40,16 @@ find_package(Torch REQUIRED)
 option(ENABLE_CCACHE "Whether to use ccache" ON)
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND AND ENABLE_CCACHE AND DEFINED ENV{CCACHE_DIR})
-    message(STATUS "Building with CCACHE enabled")
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "ccache")
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "ccache")
+  message(STATUS "Building with CCACHE enabled")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "ccache")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "ccache")
 endif()
 
 # Public include
 include_directories(
-    "${CMAKE_CURRENT_LIST_DIR}/include"
+  "${CMAKE_CURRENT_LIST_DIR}/include"
 )
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 add_subdirectory("csrc/gemm")

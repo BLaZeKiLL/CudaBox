@@ -1,5 +1,5 @@
 Write-Host "BUILDING CUDABOX" -ForegroundColor Green
-uv build --wheel -Cbuild-dir=build . --verbose --color=always --no-build-isolation
+uv build --wheel -Cbuild-dir=build . --verbose --color=always --no-build-isolation --config-settings=cmake.build-type="RelWithDebInfo"
 Write-Host "BUILD COMPLETE" -ForegroundColor Green
 ls dist
 

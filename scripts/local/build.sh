@@ -6,7 +6,8 @@ SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/")"
 source "$SCRIPT_DIR/../env.sh"
 
 bold_status "BUILDING CUDABOX" "green"
-uv build --wheel -Cbuild-dir=build . --verbose --color=always --no-build-isolation
+uv build --wheel -Cbuild-dir=build . --verbose --color=always \
+  --no-build-isolation --config-settings=cmake.build-type="Debug"
 bold_status "BUILD COMPLETE" "green"
 ls dist
 
