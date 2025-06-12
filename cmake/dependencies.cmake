@@ -1,0 +1,12 @@
+# Include Cmake
+include(${CMAKE_CURRENT_LIST_DIR}/CPM.cmake)
+
+# spdlog
+CPMAddPackage(
+  NAME spdlog
+  GITHUB_REPOSITORY gabime/spdlog
+  VERSION 1.15.3
+)
+# need to add the following cuz of the following compiler error
+# error: identifier "_BitInt" is undefined in fmt/base.h
+target_compile_definitions(spdlog INTERFACE FMT_USE_BITINT=0)

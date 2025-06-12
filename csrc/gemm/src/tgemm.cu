@@ -1,5 +1,6 @@
 #include "cuda_utils.cuh"
 #include "cudabox_ops.hpp"
+#include "logger.hpp"
 #include "torch_utils.hpp"
 
 namespace cudabox::gemm {
@@ -74,6 +75,8 @@ cudaError_t tgemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
   config.dynamicSmemBytes = smem_size;
 
   auto kernel = tgemm_kernel<T, tile_size>;
+
+  CUDABOX_LOG_INFO("Launching tgemm kernel");
 
   CUDABOX_CUDA_CALL(cudaFuncSetAttribute(
       kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size));

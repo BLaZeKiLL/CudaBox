@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 3.30 FATAL_ERROR)
 project(cudabox LANGUAGES CXX CUDA)
 
-# CMake
-include(${CMAKE_CURRENT_LIST_DIR}/cmake/utils.cmake)
-
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "ON")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
+
+# CMake
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/utils.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/dependencies.cmake)
 
 # Python
 # scikit-build-core doesn't support cmake presets
@@ -16,6 +17,7 @@ find_package(Python COMPONENTS Interpreter Development.Module ${SKBUILD_SABI_COM
 
 # CXX
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 # CXX Flags
 set(CUDABOX_CXX_FLAGS
@@ -33,7 +35,7 @@ set(CUDABOX_CUDA_FLAGS
 )
 
 # Torch
-set(USE_SYSTEM_NVTX ON) # Why is not the default in sdist builds
+set(USE_SYSTEM_NVTX ON) # Why is it not the default in torch
 find_package(Torch REQUIRED)
 
 # ccache option
