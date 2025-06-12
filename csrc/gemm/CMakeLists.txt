@@ -13,6 +13,6 @@ target_include_directories(gemm_ops PRIVATE
   "${CMAKE_CURRENT_LIST_DIR}/include"
 )
 
-target_link_libraries(gemm_ops PRIVATE ${TORCH_LIBRARIES} c10 cuda)
+target_link_libraries(gemm_ops PRIVATE ${TORCH_LIBRARIES} c10 cuda spdlog::spdlog)
 
 install(TARGETS gemm_ops LIBRARY DESTINATION ${PROJECT_NAME})
