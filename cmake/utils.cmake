@@ -10,12 +10,22 @@
 #   CMAKE_CUDA_FLAGS="-Wall"
 #
 macro(clear_cuda_arches CUDA_ARCH_FLAGS)
-    # Extract all `-gencode` flags from `CMAKE_CUDA_FLAGS`
-    string(REGEX MATCHALL "-gencode arch=[^ ]+" CUDA_ARCH_FLAGS
-      ${CMAKE_CUDA_FLAGS})
+  # Extract all `-gencode` flags from `CMAKE_CUDA_FLAGS`
+  string(REGEX MATCHALL "-gencode arch=[^ ]+" CUDA_ARCH_FLAGS
+    ${CMAKE_CUDA_FLAGS})
 
-    # Remove all `-gencode` flags from `CMAKE_CUDA_FLAGS` since they will be modified
-    # and passed back via the `CUDA_ARCHITECTURES` property.
-    string(REGEX REPLACE "-gencode arch=[^ ]+ *" "" CMAKE_CUDA_FLAGS
-      ${CMAKE_CUDA_FLAGS})
+  # Remove all `-gencode` flags from `CMAKE_CUDA_FLAGS` since they will be modified
+  # and passed back via the `CUDA_ARCHITECTURES` property.
+  string(REGEX REPLACE "-gencode arch=[^ ]+ *" "" CMAKE_CUDA_FLAGS
+    ${CMAKE_CUDA_FLAGS})
 endmacro()
+
+function(add_benchmark TARGET_NAME SOURCES)
+  cmake_parse_arguments(ARG "" "" "LIBRARIES" ${ARGN})
+
+  add_executable(${TARGET_NAME} ${SOURCES})
+  target_link_libraries(${TARGET_NAME} PRIVATE nvbench::main gtest ${ARG_LIBRARIES})
+
+  # Automatically register as CTest test
+  add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME} --color)
+endfunction()

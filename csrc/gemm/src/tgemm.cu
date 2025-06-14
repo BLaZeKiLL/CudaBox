@@ -76,8 +76,6 @@ cudaError_t tgemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
 
   auto kernel = tgemm_kernel<T, tile_size>;
 
-  CUDABOX_LOG_INFO("Launching tgemm kernel");
-
   CUDABOX_CUDA_CALL(cudaFuncSetAttribute(
       kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size));
   CUDABOX_CUDA_CALL(cudaLaunchKernelEx(&config, kernel, A, B, C, M, N, K));
