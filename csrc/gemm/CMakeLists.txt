@@ -27,3 +27,9 @@ add_benchmark(
   benchmarks/sgemm_bench.cu
   LIBRARIES gemm_ops_static
 )
+
+add_benchmark(
+  tgemm_bench
+  benchmarks/tgemm_bench.cu
+  LIBRARIES gemm_ops_static
+)
