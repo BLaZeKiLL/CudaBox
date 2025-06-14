@@ -1,3 +1,4 @@
+#if defined(Py_LIMITED_API)
 #include "cudabox_ops.hpp"
 #include "python_utils.hpp"
 
@@ -12,3 +13,4 @@ TORCH_LIBRARY_FRAGMENT(cudabox, m) {
 }
 
 REGISTER_EXTENSION(gemm_ops)
+#endif

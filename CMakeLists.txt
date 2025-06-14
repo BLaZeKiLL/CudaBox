@@ -47,6 +47,9 @@ if(CCACHE_FOUND AND ENABLE_CCACHE AND DEFINED ENV{CCACHE_DIR})
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "ccache")
 endif()
 
+# Enable ctest
+enable_testing()
+
 # Public include
 include_directories(
   "${CMAKE_CURRENT_LIST_DIR}/include"
