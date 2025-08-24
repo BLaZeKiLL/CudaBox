@@ -1,6 +1,6 @@
 set(SOURCES
-  "src/sgemm.cu"
-  "src/tgemm.cu"
+  "src/simple_gemm.cu"
+  "src/tiled_gemm.cu"
   "src/gemm_ops.cpp"
 )
 
@@ -17,19 +17,23 @@ foreach(target gemm_ops gemm_ops_static)
     "${CMAKE_CURRENT_LIST_DIR}/include"
   )
 
-  target_link_libraries(${target} PRIVATE ${TORCH_LIBRARIES} c10 cuda spdlog::spdlog)
+  # need to add the following cuz of the following compiler error
+  # error: identifier "_BitInt" is undefined in fmt/base.h
+  target_compile_definitions(${target} PRIVATE FMT_USE_BITINT=0)
+
+  target_link_libraries(${target} PRIVATE ${TORCH_LIBRARIES} c10 cuda spdlog::spdlog_header_only)
 endforeach()
 
 install(TARGETS gemm_ops LIBRARY DESTINATION ${PROJECT_NAME})
 
 add_benchmark(
-  sgemm_bench
-  benchmarks/sgemm_bench.cu
+  simple_gemm_bench
+  benchmarks/simple_gemm_bench.cu
   LIBRARIES gemm_ops_static
 )
 
 add_benchmark(
-  tgemm_bench
-  benchmarks/tgemm_bench.cu
+  tiled_gemm_bench
+  benchmarks/tiled_gemm_bench.cu
   LIBRARIES gemm_ops_static
 )

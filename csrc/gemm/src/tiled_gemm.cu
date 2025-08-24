@@ -7,9 +7,9 @@ namespace cudabox::gemm {
 
 // Block Dim == Tile Size
 template <typename T, int TILE_SIZE>
-__global__ void tgemm_kernel(T *__restrict__ A, T *__restrict__ B,
-                             T *__restrict__ C, unsigned int M, unsigned int N,
-                             unsigned int K) {
+__global__ void tiled_gemm_kernel(T *__restrict__ A, T *__restrict__ B,
+                                  T *__restrict__ C, unsigned int M,
+                                  unsigned int N, unsigned int K) {
   __shared__ T M_tile[TILE_SIZE][TILE_SIZE];
   __shared__ T N_tile[TILE_SIZE][TILE_SIZE];
 
@@ -59,8 +59,8 @@ __global__ void tgemm_kernel(T *__restrict__ A, T *__restrict__ B,
 }
 
 template <typename T>
-cudaError_t tgemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
-                         unsigned int K, cudaStream_t stream = 0) {
+cudaError_t tiled_gemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
+                              unsigned int K, cudaStream_t stream = 0) {
   constexpr unsigned int tile_size = 16;
 
   dim3 nblks(ceil_div(N, tile_size), ceil_div(M, tile_size), 1);
@@ -74,7 +74,7 @@ cudaError_t tgemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
   config.stream = stream;
   config.dynamicSmemBytes = smem_size;
 
-  auto kernel = tgemm_kernel<T, tile_size>;
+  auto kernel = tiled_gemm_kernel<T, tile_size>;
 
   CUDABOX_CUDA_CALL(cudaFuncSetAttribute(
       kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size));
@@ -84,7 +84,8 @@ cudaError_t tgemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
 }
 
 // Block Dim == Tile Size
-torch::Tensor tgemm(const torch::Tensor &mat_a, const torch::Tensor &mat_b) {
+torch::Tensor tiled_gemm(const torch::Tensor &mat_a,
+                         const torch::Tensor &mat_b) {
   TORCH_TENSOR_CHECK(mat_a);
   TORCH_TENSOR_CHECK(mat_b);
 
@@ -104,8 +105,8 @@ torch::Tensor tgemm(const torch::Tensor &mat_a, const torch::Tensor &mat_b) {
   const cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
   cudaError_t status =
-      tgemm_launch(mat_a.data_ptr<float>(), mat_b.data_ptr<float>(),
-                   mat_c.data_ptr<float>(), M, N, K, stream);
+      tiled_gemm_launch(mat_a.data_ptr<float>(), mat_b.data_ptr<float>(),
+                        mat_c.data_ptr<float>(), M, N, K, stream);
 
   TORCH_CHECK(status == cudaSuccess,
               "tgemm failed with error code " +

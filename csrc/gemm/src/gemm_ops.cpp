@@ -4,12 +4,12 @@
 
 TORCH_LIBRARY_FRAGMENT(cudabox, m) {
   // Simple Gemm
-  m.def("sgemm(Tensor mat_a, Tensor mat_b) -> Tensor");
-  m.impl("sgemm", torch::kCUDA, &cudabox::gemm::sgemm);
+  m.def("simple_gemm(Tensor mat_a, Tensor mat_b) -> Tensor");
+  m.impl("simple_gemm", torch::kCUDA, &cudabox::gemm::simple_gemm);
 
   // Tilled Gemm
-  m.def("tgemm(Tensor mat_a, Tensor mat_b) -> Tensor");
-  m.impl("tgemm", torch::kCUDA, &cudabox::gemm::tgemm);
+  m.def("tiled_gemm(Tensor mat_a, Tensor mat_b) -> Tensor");
+  m.impl("tiled_gemm", torch::kCUDA, &cudabox::gemm::tiled_gemm);
 }
 
 REGISTER_EXTENSION(gemm_ops)
