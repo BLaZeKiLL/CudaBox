@@ -1,5 +1,6 @@
 #include "cuda_utils.cuh"
 #include "cudabox_ops.hpp"
+#include "logger.hpp"
 #include "torch_utils.hpp"
 
 namespace cudabox::gemm {
@@ -42,6 +43,7 @@ cudaError_t simple_gemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
 
   auto kernel = simple_gemm_kernel<T>;
 
+  CUDABOX_LOG_DEBUG("Dispatching simple gemm M={}, N={}, K={}", M, N, K);
   CUDABOX_CUDA_CALL(cudaLaunchKernelEx(&config, kernel, A, B, C, M, N, K));
 
   return cudaSuccess;

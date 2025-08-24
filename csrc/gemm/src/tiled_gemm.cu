@@ -76,6 +76,8 @@ cudaError_t tiled_gemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
 
   auto kernel = tiled_gemm_kernel<T, tile_size>;
 
+  CUDABOX_LOG_DEBUG("Dispatching tiled gemm M={}, N={}, K={}, tile_size={}", M,
+                    N, K, tile_size);
   CUDABOX_CUDA_CALL(cudaFuncSetAttribute(
       kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size));
   CUDABOX_CUDA_CALL(cudaLaunchKernelEx(&config, kernel, A, B, C, M, N, K));
