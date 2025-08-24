@@ -5,9 +5,9 @@
 namespace cudabox::gemm {
 
 template <typename T>
-__global__ void sgemm_kernel(T *__restrict__ A, T *__restrict__ B,
-                             T *__restrict__ C, unsigned int M, unsigned int N,
-                             unsigned int K) {
+__global__ void simple_gemm_kernel(T *__restrict__ A, T *__restrict__ B,
+                                   T *__restrict__ C, unsigned int M,
+                                   unsigned int N, unsigned int K) {
   // Index calculation for the grid
   unsigned int col = threadIdx.x + blockIdx.x * blockDim.x;
   unsigned int row = threadIdx.y + blockIdx.y * blockDim.y;
@@ -28,8 +28,8 @@ __global__ void sgemm_kernel(T *__restrict__ A, T *__restrict__ B,
 }
 
 template <typename T>
-cudaError_t sgemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
-                         unsigned int K, cudaStream_t stream = 0) {
+cudaError_t simple_gemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
+                               unsigned int K, cudaStream_t stream = 0) {
   constexpr unsigned int tile_size = 32;
 
   dim3 nblks(ceil_div(N, tile_size), ceil_div(M, tile_size), 1);
@@ -40,14 +40,15 @@ cudaError_t sgemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
   config.blockDim = nthrs;
   config.stream = stream;
 
-  auto kernel = sgemm_kernel<T>;
+  auto kernel = simple_gemm_kernel<T>;
 
   CUDABOX_CUDA_CALL(cudaLaunchKernelEx(&config, kernel, A, B, C, M, N, K));
 
   return cudaSuccess;
 }
 
-torch::Tensor sgemm(const torch::Tensor &mat_a, const torch::Tensor &mat_b) {
+torch::Tensor simple_gemm(const torch::Tensor &mat_a,
+                          const torch::Tensor &mat_b) {
   TORCH_TENSOR_CHECK(mat_a);
   TORCH_TENSOR_CHECK(mat_b);
 
@@ -67,8 +68,8 @@ torch::Tensor sgemm(const torch::Tensor &mat_a, const torch::Tensor &mat_b) {
   const cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
   cudaError_t status =
-      sgemm_launch(mat_a.data_ptr<float>(), mat_b.data_ptr<float>(),
-                   mat_c.data_ptr<float>(), M, N, K, stream);
+      simple_gemm_launch(mat_a.data_ptr<float>(), mat_b.data_ptr<float>(),
+                         mat_c.data_ptr<float>(), M, N, K, stream);
 
   TORCH_CHECK(status == cudaSuccess,
               "sgemm failed with error code " +

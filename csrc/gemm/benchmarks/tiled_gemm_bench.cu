@@ -6,11 +6,11 @@
 
 namespace cudabox::gemm {
 template <typename T>
-cudaError_t sgemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
-                         unsigned int K, cudaStream_t stream = 0);
+cudaError_t tiled_gemm_launch(T *A, T *B, T *C, unsigned int M, unsigned int N,
+                              unsigned int K, cudaStream_t stream = 0);
 }
 
-void sgemm_bench(nvbench::state &state) {
+void tiled_gemm_bench(nvbench::state &state) {
   unsigned int M = static_cast<unsigned int>(state.get_int64("M"));
   unsigned int N = static_cast<unsigned int>(state.get_int64("N"));
   unsigned int K = static_cast<unsigned int>(state.get_int64("K"));
@@ -33,7 +33,7 @@ void sgemm_bench(nvbench::state &state) {
   state.add_global_memory_writes<float>(MN, "writes");
 
   state.exec([&](nvbench::launch &launch) {
-    cudaError_t status = cudabox::gemm::sgemm_launch(
+    cudaError_t status = cudabox::gemm::tiled_gemm_launch(
         thrust::raw_pointer_cast(A.data()), thrust::raw_pointer_cast(B.data()),
         thrust::raw_pointer_cast(C.data()), M, N, K, launch.get_stream());
 
@@ -41,7 +41,7 @@ void sgemm_bench(nvbench::state &state) {
   });
 }
 
-NVBENCH_BENCH(sgemm_bench)
+NVBENCH_BENCH(tiled_gemm_bench)
     .add_int64_power_of_two_axis("M", nvbench::range(6, 10))
     .add_int64_power_of_two_axis("N", nvbench::range(6, 10))
     .add_int64_power_of_two_axis("K", nvbench::range(10, 14));

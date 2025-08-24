@@ -4,9 +4,11 @@
 
 namespace cudabox {
 namespace gemm {
-torch::Tensor sgemm(const torch::Tensor &mat_a, const torch::Tensor &mat_b);
+torch::Tensor simple_gemm(const torch::Tensor &mat_a,
+                          const torch::Tensor &mat_b);
 
-torch::Tensor tgemm(const torch::Tensor &mat_a, const torch::Tensor &mat_b);
+torch::Tensor tiled_gemm(const torch::Tensor &mat_a,
+                         const torch::Tensor &mat_b);
 } // namespace gemm
 
 } // namespace cudabox
