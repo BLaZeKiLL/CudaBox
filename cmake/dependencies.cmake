@@ -21,3 +21,12 @@ CPMAddPackage(
     "INSTALL_GTEST OFF"
     "gtest_force_shared_crt ON"
 )
+
+# cutlass
+CPMAddPackage(
+    NAME cutlass
+    GITHUB_REPOSITORY nvidia/cutlass
+    GIT_TAG v4.5.1
+    OPTIONS
+        "CUTLASS_ENABLE_HEADERS_ONLY ON"
+)
