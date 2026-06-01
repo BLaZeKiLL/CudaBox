@@ -1,4 +1,5 @@
 set(SOURCES
+  "src/sm90_pipelined_tma_mma_gemm/gemm.cu"
   "src/simple_gemm.cu"
   "src/tiled_gemm.cu"
   "src/gemm_ops.cpp"
@@ -21,7 +22,17 @@ foreach(target gemm_ops gemm_ops_static)
   # error: identifier "_BitInt" is undefined in fmt/base.h
   target_compile_definitions(${target} PRIVATE FMT_USE_BITINT=0)
 
-  target_link_libraries(${target} PRIVATE ${TORCH_LIBRARIES} c10 cuda spdlog::spdlog_header_only)
+  target_link_libraries(
+    ${target} PRIVATE
+    ${TORCH_LIBRARIES}
+    CUDA::cuda_driver CUDA::cudart
+    spdlog::spdlog_header_only
+    nvidia::cutlass::cutlass
+  )
+
+  set_target_properties(${target} PROPERTIES
+    CUDA_ARCHITECTURES "${CUDABOX_CUDA_ARCH}"
+  )
 endforeach()
 
 install(TARGETS gemm_ops LIBRARY DESTINATION ${PROJECT_NAME})
@@ -29,11 +40,17 @@ install(TARGETS gemm_ops LIBRARY DESTINATION ${PROJECT_NAME})
 add_benchmark(
   simple_gemm_bench
   benchmarks/simple_gemm_bench.cu
-  LIBRARIES gemm_ops_static
+  LIBRARIES gemm_ops_static ${TORCH_LIBRARIES}
 )
 
 add_benchmark(
   tiled_gemm_bench
   benchmarks/tiled_gemm_bench.cu
-  LIBRARIES gemm_ops_static
+  LIBRARIES gemm_ops_static ${TORCH_LIBRARIES}
+)
+
+add_benchmark(
+  sm90_pipelined_tma_mma_gemm_bench
+  benchmarks/sm90_pipelined_tma_mma_gemm_bench.cu
+  LIBRARIES gemm_ops_static ${TORCH_LIBRARIES} nvidia::cutlass::cutlass
 )

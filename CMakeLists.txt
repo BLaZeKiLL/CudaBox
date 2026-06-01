@@ -1,13 +1,25 @@
 cmake_minimum_required(VERSION 3.30 FATAL_ERROR)
-project(cudabox LANGUAGES CXX CUDA)
 
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "ON")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
-# CMake
+option(CUDABOX_ENABLE_BENCHMARKS "Build nvbench microbenchmarks" OFF)
+
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/utils.cmake)
+if(NOT DEFINED CACHE{CMAKE_CUDA_ARCHITECTURES})
+  detect_cuda_arch(_DETECTED_ARCH FALLBACK 90a)
+  set(CMAKE_CUDA_ARCHITECTURES ${_DETECTED_ARCH}
+      CACHE STRING "CUDA architectures (auto-detected; opts into `a` variant on Hopper+)")
+endif()
+
+set(CUDABOX_CUDA_ARCH "${CMAKE_CUDA_ARCHITECTURES}" CACHE STRING
+    "Per-target CUDA arch for CudaBox kernels (snapshot before Torch clobbers global)")
+
+project(cudabox LANGUAGES CXX CUDA)
+
+# Dependencies
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/dependencies.cmake)
 
 # Python
@@ -25,7 +37,6 @@ set(CUDABOX_CXX_FLAGS
 )
 
 # CUDA
-enable_language(CUDA)
 find_package(CUDAToolkit REQUIRED)
 set_property(GLOBAL PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
@@ -36,8 +47,14 @@ set(CUDABOX_CUDA_FLAGS
 )
 
 # Torch
+# Also feed Torch the same arch so its own bits (if any get compiled here)
+# match. Format expected by torch: dot-separated, e.g. "9.0a" not "90a".
+string(REGEX REPLACE "^([0-9])([0-9])(a?)$" "\\1.\\2\\3" _TORCH_ARCH
+                     "${CUDABOX_CUDA_ARCH}")
+set(ENV{TORCH_CUDA_ARCH_LIST} "${_TORCH_ARCH}")
 set(USE_SYSTEM_NVTX ON) # Why is it not the default in torch
 find_package(Torch REQUIRED)
+clear_cuda_arches(_TORCH_GENCODE_DISCARDED)
 
 # ccache option
 option(ENABLE_CCACHE "Whether to use ccache" ON)
@@ -57,6 +74,7 @@ include_directories(
 )
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Build arch: ${CUDABOX_CUDA_ARCH}")
 
 add_subdirectory("csrc/elementwise")
 add_subdirectory("csrc/gemm")

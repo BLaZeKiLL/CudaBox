@@ -20,7 +20,16 @@ foreach(target elementwise_ops elementwise_ops_static)
   # error: identifier "_BitInt" is undefined in fmt/base.h
   target_compile_definitions(${target} PRIVATE FMT_USE_BITINT=0)
 
-  target_link_libraries(${target} PRIVATE ${TORCH_LIBRARIES} c10 cuda spdlog::spdlog_header_only)
+  target_link_libraries(
+    ${target} PRIVATE
+    ${TORCH_LIBRARIES}
+    CUDA::cuda_driver CUDA::cudart
+    spdlog::spdlog_header_only
+  )
+
+  set_target_properties(${target} PROPERTIES
+    CUDA_ARCHITECTURES "${CUDABOX_CUDA_ARCH}"
+  )
 endforeach()
 
 install(TARGETS elementwise_ops LIBRARY DESTINATION ${PROJECT_NAME})
