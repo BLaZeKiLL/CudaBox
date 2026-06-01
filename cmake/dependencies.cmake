@@ -8,9 +8,10 @@ CPMAddPackage(
   VERSION 1.15.3
 )
 
-# nvbench
-# https://github.com/NVIDIA/nvbench_demo/blob/main/CMakeLists.txt
-CPMAddPackage("gh:NVIDIA/nvbench#main")
+if(CUDABOX_ENABLE_BENCHMARKS)
+  # https://github.com/NVIDIA/nvbench_demo/blob/main/CMakeLists.txt
+  CPMAddPackage("gh:NVIDIA/nvbench#main")
+endif()
 
 # gtest
 CPMAddPackage(

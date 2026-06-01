@@ -34,6 +34,21 @@ bold_status "INSTALLING CUDABOX" "green"
 uv pip install ./dist/cudabox*.whl --force-reinstall
 bold_status "INSTALL COMPLETE" "green"
 
+bold_status "LISTING CUBINS IN INSTALLED .SO FILES" "green"
+INSTALL_DIR="$(python -c 'import cudabox, os; print(os.path.dirname(cudabox.__file__))')"
+# Pick nvcc from CUDA_HOME if set, else from PATH.
+NVCC_BIN="${CUDA_HOME:-/usr/local/cuda}/bin/nvcc"
+CUOBJDUMP="$(dirname "$NVCC_BIN")/cuobjdump"
+if [ -x "$CUOBJDUMP" ]; then
+  for so in "$INSTALL_DIR"/*.so; do
+    [ -e "$so" ] || continue
+    echo ":::: $so ::::"
+    "$CUOBJDUMP" --list-elf "$so" 2>/dev/null | sed 's/^/    /'
+  done
+else
+  echo "cuobjdump not found at $CUOBJDUMP; skipping cubin listing." >&2
+fi
+
 bold_status "VERIFYING CUDABOX IMPORT + LISTING REGISTERED TORCH OPS" "green"
 python - <<'PYEOF'
 import importlib

@@ -55,6 +55,6 @@ def benchmark(size: int, provider: str):
 
 
 if __name__ == "__main__":
-    out_dir = os.path.join(os.path.dirname(__file__), "results")
+    out_dir = os.path.join(os.path.dirname(__file__), "results", "softmax")
     os.makedirs(out_dir, exist_ok=True)
     benchmark.run(print_data=True, save_path=out_dir)
