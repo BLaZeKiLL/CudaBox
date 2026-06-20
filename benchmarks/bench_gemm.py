@@ -7,8 +7,7 @@ import triton.testing
 from cudabox.gemm import simple_gemm as cudabox_simple_gemm
 from cudabox.gemm import sm90_pipelined_tma_mma_gemm as cudabox_sm90_gemm
 from cudabox.gemm import tiled_gemm as cudabox_tiled_gemm
-
-from .utils import DEFAULT_DEVICE, run_benchmark
+from utils import DEFAULT_DEVICE, run_benchmark
 
 # M=N square sizes to sweep. For each value we emit one plot per dtype with
 # K on the x-axis. Yields len(MN_VALUES) * len(dtypes) = 8 plots total in

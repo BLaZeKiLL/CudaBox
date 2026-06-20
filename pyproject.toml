@@ -25,3 +25,6 @@ cmake.args = [
 wheel.py-api = "cp312"
 wheel.license-files = []
 wheel.packages = ["python/cudabox"]
+
+[tool.isort]
+profile = "black"

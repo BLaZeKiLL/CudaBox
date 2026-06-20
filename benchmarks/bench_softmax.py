@@ -5,8 +5,7 @@ import torch
 import triton
 import triton.testing
 from cudabox.elementwise import softmax as cudabox_softmax
-
-from .utils import DEFAULT_DEVICE, DEFAULT_DTYPE, run_benchmark
+from utils import DEFAULT_DEVICE, DEFAULT_DTYPE, run_benchmark
 
 
 def torch_softmax(x):

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.30 FATAL_ERROR)
 
 set(CMAKE_COLOR_DIAGNOSTICS ON)
-set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "ON")
+set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
@@ -76,5 +76,6 @@ include_directories(
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Build arch: ${CUDABOX_CUDA_ARCH}")
 
+add_subdirectory("csrc/algorithms")
 add_subdirectory("csrc/elementwise")
 add_subdirectory("csrc/gemm")

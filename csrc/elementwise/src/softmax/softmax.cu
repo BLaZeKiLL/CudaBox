@@ -9,19 +9,15 @@ namespace cg = cooperative_groups;
 
 namespace cudabox::elementwise {
 
-constexpr int THREADS_PER_BLOCK = 256;
-constexpr int THREADS_PER_WARP = 32;
-constexpr int FULL_MASK = 0xffffffff;
-constexpr int NUM_WARPS = THREADS_PER_BLOCK / THREADS_PER_WARP;
-
 // Global-memory scratch layout: [global_max, global_sum]
 constexpr int GMEM_MAX_IDX = 0;
 constexpr int GMEM_SUM_IDX = 1;
 constexpr int GMEM_SIZE = 2;
 
 struct SumReducer {
-  __device__ inline static float invoke(float value, int mask = FULL_MASK,
-                                        int thread_count = THREADS_PER_WARP) {
+  __device__ inline static float
+  invoke(float value, int mask = utils::FULL_MASK,
+         int thread_count = utils::THREADS_PER_WARP) {
     for (int offset = thread_count / 2; offset > 0; offset /= 2) {
       value += __shfl_down_sync(mask, value, offset);
     }
@@ -30,30 +26,15 @@ struct SumReducer {
 };
 
 struct MaxReducer {
-  __device__ inline static float invoke(float value, int mask = FULL_MASK,
-                                        int thread_count = THREADS_PER_WARP) {
+  __device__ inline static float
+  invoke(float value, int mask = utils::FULL_MASK,
+         int thread_count = utils::THREADS_PER_WARP) {
     for (int offset = thread_count / 2; offset > 0; offset /= 2) {
       value = fmaxf(value, __shfl_down_sync(mask, value, offset));
     }
     return value;
   }
 };
-
-// CUDA has no atomicMax for float; emulate via CAS on the bit-pattern.
-__device__ inline float atomic_max_float(float *addr, float value) {
-  int *addr_as_int = reinterpret_cast<int *>(addr);
-  int old_int = *addr_as_int;
-  int assumed;
-  do {
-    assumed = old_int;
-    float assumed_f = __int_as_float(assumed);
-    if (value <= assumed_f) {
-      break;
-    }
-    old_int = atomicCAS(addr_as_int, assumed, __float_as_int(value));
-  } while (assumed != old_int);
-  return __int_as_float(old_int);
-}
 
 template <typename Reducer>
 __device__ inline float block_reducer(float thread_val, float *smem,
@@ -62,17 +43,17 @@ __device__ inline float block_reducer(float thread_val, float *smem,
   float warp_val = Reducer::invoke(thread_val);
 
   // thread 0 of each warp writes its partial to shared memory
-  if (tid % THREADS_PER_WARP == 0) {
-    smem[tid / THREADS_PER_WARP] = warp_val;
+  if (tid % utils::THREADS_PER_WARP == 0) {
+    smem[tid / utils::THREADS_PER_WARP] = warp_val;
   }
   __syncthreads();
 
   // first warp reduces the per-warp partials into the block result
-  if (tid < NUM_WARPS) {
+  if (tid < utils::NUM_WARPS) {
     // mask of the first NUM_WARPS lanes in the warp (e.g. 8 warps -> 0xff)
-    constexpr unsigned int mask = (1u << NUM_WARPS) - 1u;
+    constexpr unsigned int mask = (1u << utils::NUM_WARPS) - 1u;
     float block_val = smem[tid];
-    block_val = Reducer::invoke(block_val, mask, NUM_WARPS);
+    block_val = Reducer::invoke(block_val, mask, utils::NUM_WARPS);
 
     if (tid == 0) {
       smem[0] = block_val;
@@ -83,7 +64,7 @@ __device__ inline float block_reducer(float thread_val, float *smem,
   return smem[0];
 }
 
-__global__ __launch_bounds__(THREADS_PER_BLOCK) void softmax_kernel(
+__global__ __launch_bounds__(utils::THREADS_PER_BLOCK) void softmax_kernel(
     const float *__restrict__ in, float *__restrict__ out,
     float *__restrict__ gmem, const int64_t size) {
   cg::grid_group grid = cg::this_grid();
@@ -93,7 +74,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void softmax_kernel(
   const int64_t gtid = bid * blockDim.x + tid;
   const int64_t gstride = gridDim.x * blockDim.x;
 
-  __shared__ float smem[NUM_WARPS];
+  __shared__ float smem[utils::NUM_WARPS];
 
   // Vectorized loads: process 4 floats at a time via float4 (128-bit) reads.
   const float4 *in4 = reinterpret_cast<const float4 *>(in);
@@ -118,7 +99,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void softmax_kernel(
 
   // pass 1: grid reduction
   if (tid == 0) {
-    atomic_max_float(&gmem[GMEM_MAX_IDX], block_max);
+    utils::atomic_max_float(&gmem[GMEM_MAX_IDX], block_max);
   }
   grid.sync();
   float global_max = gmem[GMEM_MAX_IDX];
@@ -177,19 +158,28 @@ cudaError_t softmax_launch(const float *in, float *out, float *gmem,
   int sm_count = 0;
   CUDABOX_CUDA_CALL(cudaDeviceGetAttribute(
       &sm_count, cudaDevAttrMultiProcessorCount, device));
-  int blocks_per_sm = 0;
-  CUDABOX_CUDA_CALL(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-      &blocks_per_sm, softmax_kernel, THREADS_PER_BLOCK, 0));
-  const int max_cooperative_blocks = sm_count * 1;
+  int blocks_per_sm = 1;
+
+  // cooperative launch requires there to be a single wavefront of blocks
+  // so max blocks is the number of SMs * max blocks per SM
+  // CUDABOX_CUDA_CALL(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+  //     &blocks_per_sm, softmax_kernel, utils::THREADS_PER_BLOCK, 0));
+
+  // One block per SM. The kernel is memory-bandwidth bound, so additional
+  // resident blocks do not raise throughput; they only add cooperative
+  // grid.sync() barrier cost and atomic contention on the single global
+  // max/sum slots. One block per SM still forms a valid co-resident
+  // cooperative wavefront (occupancy is >= 1 for any launchable kernel).
+  const int max_cooperative_blocks = sm_count * blocks_per_sm;
 
   const int64_t requested_blocks =
-      (size + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+      (size + utils::THREADS_PER_BLOCK - 1) / utils::THREADS_PER_BLOCK;
   const int blocks = static_cast<int>(
       std::min<int64_t>(requested_blocks, max_cooperative_blocks));
 
   cudaLaunchConfig_t config{};
   config.gridDim = dim3(blocks);
-  config.blockDim = dim3(THREADS_PER_BLOCK);
+  config.blockDim = dim3(utils::THREADS_PER_BLOCK);
   config.stream = stream;
 
   cudaLaunchAttribute attrs[1];
