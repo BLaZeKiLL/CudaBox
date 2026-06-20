@@ -26,7 +26,7 @@ fi
 
 bold_status "BUILDING CUDABOX" "green"
 uv build --wheel -Cbuild-dir=build . --verbose --color=always \
-  --no-build-isolation --config-settings=cmake.build-type="Debug"
+  --no-build-isolation --config-settings=cmake.build-type="RelWithDebInfo"
 bold_status "BUILD COMPLETE" "green"
 ls dist
 

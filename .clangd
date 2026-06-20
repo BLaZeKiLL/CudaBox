@@ -4,6 +4,7 @@ CompileFlags:
   Add:
     - "--cuda-path=/usr/local/cuda"
     - "--cuda-gpu-arch=sm_90a"
+    - "-D__NVCC__"
     - "-I/usr/local/cuda/include"
     # report all errors
     - "-ferror-limit=0"
