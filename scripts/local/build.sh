@@ -66,27 +66,32 @@ uv build --wheel -Cbuild-dir=build . --verbose --color=always \
 bold_status "BUILD COMPLETE" "green"
 ls dist
 
-bold_status "INSTALLING CUDABOX" "green"
-uv pip install ./dist/cudabox*.whl --force-reinstall
-bold_status "INSTALL COMPLETE" "green"
+# The steps below install and import the built extension. Importing requires
+# the CUDA driver (libcuda.so.1), which only exists on a machine with an NVIDIA
+# GPU. Skip them in CI (GitHub Actions sets CI=true) where we cross-compile on
+# GPU-less runners — the wheel in dist/ is already complete and ready to ship.
+if [ -z "${CI:-}" ]; then
+  bold_status "INSTALLING CUDABOX" "green"
+  uv pip install ./dist/cudabox*.whl --force-reinstall
+  bold_status "INSTALL COMPLETE" "green"
 
-bold_status "LISTING CUBINS IN INSTALLED .SO FILES" "green"
-INSTALL_DIR="$(python -c 'import cudabox, os; print(os.path.dirname(cudabox.__file__))')"
-# Pick nvcc from CUDA_HOME if set, else from PATH.
-NVCC_BIN="${CUDA_HOME:-/usr/local/cuda}/bin/nvcc"
-CUOBJDUMP="$(dirname "$NVCC_BIN")/cuobjdump"
-if [ -x "$CUOBJDUMP" ]; then
-  for so in "$INSTALL_DIR"/*.so; do
-    [ -e "$so" ] || continue
-    echo ":::: $so ::::"
-    "$CUOBJDUMP" --list-elf "$so" 2>/dev/null | sed 's/^/    /'
-  done
-else
-  echo "cuobjdump not found at $CUOBJDUMP; skipping cubin listing." >&2
-fi
+  bold_status "LISTING CUBINS IN INSTALLED .SO FILES" "green"
+  INSTALL_DIR="$(python -c 'import cudabox, os; print(os.path.dirname(cudabox.__file__))')"
+  # Pick nvcc from CUDA_HOME if set, else from PATH.
+  NVCC_BIN="${CUDA_HOME:-/usr/local/cuda}/bin/nvcc"
+  CUOBJDUMP="$(dirname "$NVCC_BIN")/cuobjdump"
+  if [ -x "$CUOBJDUMP" ]; then
+    for so in "$INSTALL_DIR"/*.so; do
+      [ -e "$so" ] || continue
+      echo ":::: $so ::::"
+      "$CUOBJDUMP" --list-elf "$so" 2>/dev/null | sed 's/^/    /'
+    done
+  else
+    echo "cuobjdump not found at $CUOBJDUMP; skipping cubin listing." >&2
+  fi
 
-bold_status "VERIFYING CUDABOX IMPORT + LISTING REGISTERED TORCH OPS" "green"
-python - <<'PYEOF'
+  bold_status "VERIFYING CUDABOX IMPORT + LISTING REGISTERED TORCH OPS" "green"
+  python - <<'PYEOF'
 import importlib
 import sys
 
@@ -107,6 +112,11 @@ print(f"Registered torch ops under torch.ops.{ns} ({len(ns_ops)}):")
 for op in ns_ops:
     print(f"  - torch.ops.{op.replace('::', '.')}")
 PYEOF
+else
+  bold_status "CI DETECTED: SKIPPING INSTALL + IMPORT VERIFY (no GPU/driver)" "yellow"
+  echo "Built wheel(s) ready in dist/ for upload:"
+  ls dist
+fi
 
 # If this script was sourced, the activation persists in the caller's shell.
 # Otherwise, print the command to activate manually.

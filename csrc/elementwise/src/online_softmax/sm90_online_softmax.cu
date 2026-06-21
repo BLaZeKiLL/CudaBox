@@ -98,7 +98,6 @@ __global__ __launch_bounds__(BLOCK_THREADS) void softmax_persistent_cute_kernel(
   extern __shared__ char smem_raw[];
   SharedStorage &smem = *reinterpret_cast<SharedStorage *>(smem_raw);
 
-  int tid = threadIdx.x;
   int warp_id = warp.meta_group_rank();
   int lane_id = warp.thread_rank();
   bool is_producer = (warp_id < PRODUCER_WARPS);
