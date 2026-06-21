@@ -12,8 +12,6 @@ jobs:
   build-wheel:
     name: Build CUDA wheel
     runs-on: ubuntu-24.04
-    # NVIDIA CUDA 13.0 devel image ships nvcc, cuobjdump, and the CUDA runtime
-    # under /usr/local/cuda, which build.sh expects.
     container:
       image: nvidia/cuda:13.0.0-devel-ubuntu24.04
 
@@ -45,7 +43,6 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up recent CMake + Ninja
-        # Ensure a CMake new enough to support CUDA 13.0.
         uses: lukka/get-cmake@latest
 
       - name: Install uv (with Python 3.12)
@@ -81,7 +78,6 @@ jobs:
       name: pypi
       url: https://pypi.org/p/cudabox
     permissions:
-      # Required for PyPI trusted publishing (OIDC); no API token needed.
       id-token: write
 
     steps:
