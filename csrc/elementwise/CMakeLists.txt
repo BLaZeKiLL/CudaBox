@@ -2,6 +2,7 @@ set(SOURCES
   "src/rmsnorm/rmsnorm.cu"
   "src/softmax/softmax.cu"
   "src/online_softmax/online_softmax.cu"
+  "src/online_softmax/sm90_online_softmax.cu"
   "src/elementwise_ops.cpp"
 )
 
@@ -27,6 +28,7 @@ foreach(target elementwise_ops elementwise_ops_static)
     ${TORCH_LIBRARIES}
     CUDA::cuda_driver CUDA::cudart
     spdlog::spdlog_header_only
+    nvidia::cutlass::cutlass
   )
 
   set_target_properties(${target} PROPERTIES

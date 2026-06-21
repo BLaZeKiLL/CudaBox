@@ -9,6 +9,10 @@ TORCH_LIBRARY_FRAGMENT(cudabox, m) {
   m.def("online_softmax(Tensor tensor) -> Tensor");
   m.impl("online_softmax", torch::kCUDA, &cudabox::elementwise::online_softmax);
 
+  m.def("sm90_online_softmax(Tensor tensor) -> Tensor");
+  m.impl("sm90_online_softmax", torch::kCUDA,
+         &cudabox::elementwise::sm90::online_softmax);
+
   m.def("rmsnorm(Tensor tensor, Tensor gamma, float eps) -> Tensor");
   m.impl("rmsnorm", torch::kCUDA, &cudabox::elementwise::rmsnorm);
 }

@@ -4,6 +4,7 @@ import torch
 import triton
 import triton.testing
 from cudabox.elementwise import online_softmax as cudabox_online_softmax
+from cudabox.elementwise import sm90_online_softmax as cudabox_sm90_online_softmax
 from utils import DEFAULT_DEVICE, DEFAULT_DTYPE, run_benchmark
 
 # Rows (batch) are swept across separate plots; columns are swept on the
@@ -17,14 +18,17 @@ def torch_softmax(x):
 
 
 LINE_VALS = [
+    "cudabox_sm90_online_softmax",
     "cudabox_online_softmax",
     "torch_softmax",
 ]
 LINE_NAMES = [
+    "Cudabox SM90 Online Softmax",
     "Cudabox Online Softmax",
     "Torch Softmax",
 ]
 STYLES = [
+    ("black", "-"),
     ("blue", "--"),
     ("purple", "-."),
 ]
@@ -33,6 +37,7 @@ STYLES = [
 def _run(rows: int, cols: int, provider: str):
     input = torch.randn((rows, cols), dtype=DEFAULT_DTYPE, device=DEFAULT_DEVICE)
     FN_MAP = {
+        "cudabox_sm90_online_softmax": lambda: cudabox_sm90_online_softmax(input),
         "cudabox_online_softmax": lambda: cudabox_online_softmax(input),
         "torch_softmax": lambda: torch_softmax(input),
     }
