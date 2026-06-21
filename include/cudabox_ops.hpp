@@ -19,6 +19,12 @@ torch::Tensor online_softmax(const torch::Tensor &tensor);
 torch::Tensor rmsnorm(const torch::Tensor &tensor, const torch::Tensor &gamma,
                       const double eps);
 
+namespace sm90 {
+
+torch::Tensor online_softmax(const torch::Tensor &tensor);
+
+} // namespace sm90
+
 } // namespace elementwise
 
 namespace gemm {

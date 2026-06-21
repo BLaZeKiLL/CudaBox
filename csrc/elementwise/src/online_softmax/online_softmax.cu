@@ -15,7 +15,7 @@ struct MaxSum {
   float exp_sum;
 };
 
-constexpr MaxSum MaxSumIdentity = {-INFINITY, 0.0f};
+static constexpr MaxSum MaxSumIdentity = {-INFINITY, 0.0f};
 
 struct MaxSumOp {
   __device__ MaxSum operator()(const MaxSum &a, const MaxSum &b) {
