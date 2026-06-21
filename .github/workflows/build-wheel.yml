@@ -1,0 +1,93 @@
+name: Build Wheel
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-wheel:
+    name: Build CUDA wheel
+    runs-on: ubuntu-24.04
+    # NVIDIA CUDA 13.0 devel image ships nvcc, cuobjdump, and the CUDA runtime
+    # under /usr/local/cuda, which build.sh expects.
+    container:
+      image: nvidia/cuda:13.0.0-devel-ubuntu24.04
+
+    env:
+      CUDA_HOME: /usr/local/cuda
+      DEBIAN_FRONTEND: noninteractive
+      # Runners have no GPU, so we cross-compile. Target Hopper only for now
+      # (sm_90a unlocks the WGMMA/TMA instructions the CUTLASS kernels need).
+      # Blackwell (sm_100a/120a) can be appended here later, e.g. "90a;100a".
+      # scikit-build-core forwards CMAKE_ARGS to the CMake configure step, which
+      # populates CMAKE_CUDA_ARCHITECTURES in the cache and bypasses the
+      # nvidia-smi auto-detection in CMakeLists.txt.
+      CMAKE_ARGS: "-DCMAKE_CUDA_ARCHITECTURES=90a"
+
+    steps:
+      - name: Install system dependencies (clang, ninja, git)
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            clang \
+            ninja-build \
+            git \
+            curl \
+            ca-certificates
+          clang --version
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up recent CMake + Ninja
+        # Ensure a CMake new enough to support CUDA 13.0.
+        uses: lukka/get-cmake@latest
+
+      - name: Install uv (with Python 3.12)
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel
+        run: |
+          export PATH="$CUDA_HOME/bin:$PATH"
+          bash scripts/local/build.sh
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cudabox-wheel
+          path: dist/*.whl
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build-wheel
+    # Only publish on version tag pushes (e.g. v0.1.0).
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    # Configure trusted publishing for this environment at:
+    # https://pypi.org/manage/account/publishing/
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cudabox
+    permissions:
+      # Required for PyPI trusted publishing (OIDC); no API token needed.
+      id-token: write
+
+    steps:
+      - name: Download wheel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: cudabox-wheel
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
