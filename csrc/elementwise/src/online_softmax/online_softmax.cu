@@ -36,6 +36,8 @@ struct MaxSumOp {
   }
 };
 
+namespace block_reduce {
+
 __global__ void online_softmax_kernel(const float *input, float *output,
                                       const int64_t rows, const int64_t cols) {
   const auto block = cg::this_thread_block();
@@ -99,6 +101,102 @@ cudaError_t online_softmax_launch(const float *input, float *output,
   return cudaSuccess;
 }
 
+} // namespace block_reduce
+
+namespace cluster_reduce {
+
+__global__ void online_softmax_kernel(const float *input, float *output,
+                                      const int64_t rows, const int64_t cols) {
+  const auto cluster = cg::this_cluster();
+  const auto block = cg::this_thread_block();
+  const auto warp = cg::tiled_partition<utils::THREADS_PER_WARP>(block);
+
+  const auto bid = blockIdx.x;
+  const auto tid = threadIdx.x;
+  const auto row_id = (bid / utils::BLOCKS_PER_CLUSTER);
+  const auto rtid = (bid % utils::BLOCKS_PER_CLUSTER) * blockDim.x + tid;
+
+  const auto cluster_size = cluster.num_threads();
+
+  const auto *row_input = input + row_id * cols;
+  auto *row_output = output + row_id * cols;
+
+  MaxSumOp max_sum_op{};
+
+  __shared__ MaxSum smem_max_sums[utils::NUM_WARPS];
+  __shared__ MaxSum block_max_sum;
+  __shared__ MaxSum cluster_max_sum;
+
+  // Thread reduction
+  MaxSum thread_max_sum = MaxSumIdentity;
+  for (auto i = rtid; i < cols; i += cluster_size) {
+    thread_max_sum = max_sum_op(thread_max_sum, {row_input[i], 1.0f});
+  }
+
+  // Warp reduction
+  const auto warp_id = warp.meta_group_rank();
+  MaxSum warp_max_sum = cg::reduce(warp, thread_max_sum, max_sum_op);
+  cg::invoke_one(warp, [&] { smem_max_sums[warp_id] = warp_max_sum; });
+  block.sync();
+
+  // Block reduction
+  if (warp_id == 0) {
+    const auto value =
+        tid < utils::NUM_WARPS ? smem_max_sums[tid] : MaxSumIdentity;
+    const auto result = cg::reduce(warp, value, max_sum_op);
+    cg::invoke_one(warp, [&] { block_max_sum = result; });
+  }
+  cluster.sync();
+
+  // Cluster reduction
+  if (warp_id == 0) {
+    const auto value = tid < utils::NUM_WARPS
+                           ? tid == cluster.block_rank()
+                                 ? block_max_sum
+                                 : *cluster.map_shared_rank(&block_max_sum, tid)
+                           : MaxSumIdentity;
+    const auto result = cg::reduce(warp, value, max_sum_op);
+    cg::invoke_one(warp, [&] { cluster_max_sum = result; });
+  }
+  cluster.sync();
+
+  // Compute output
+  const float row_max = cluster_max_sum.max;
+  const float row_sum_inv = 1.0f / cluster_max_sum.exp_sum;
+
+  for (auto i = rtid; i < cols; i += cluster_size) {
+    row_output[i] = expf(row_input[i] - row_max) * row_sum_inv;
+  }
+}
+
+cudaError_t online_softmax_launch(const float *input, float *output,
+                                  const int64_t rows, const int64_t cols,
+                                  cudaStream_t stream = 0) {
+  const auto blocks = rows * utils::BLOCKS_PER_CLUSTER;
+
+  cudaLaunchConfig_t config{};
+  config.gridDim = dim3(blocks);
+  config.blockDim = dim3(utils::THREADS_PER_BLOCK);
+  config.stream = stream;
+
+  cudaLaunchAttribute attr[1];
+  attr[0].id = cudaLaunchAttributeClusterDimension;
+  attr[0].val.clusterDim.x = utils::BLOCKS_PER_CLUSTER;
+  attr[0].val.clusterDim.y = 1;
+  attr[0].val.clusterDim.z = 1;
+
+  config.attrs = attr;
+  config.numAttrs = 1;
+
+  CUDABOX_LOG_DEBUG("Dispatching online_softmax, rows={}, cols={}", rows, cols);
+  CUDABOX_CUDA_CALL(cudaLaunchKernelEx(&config, online_softmax_kernel, input,
+                                       output, rows, cols));
+
+  return cudaSuccess;
+}
+
+} // namespace cluster_reduce
+
 torch::Tensor online_softmax(const torch::Tensor &tensor) {
   TORCH_TENSOR_CHECK(tensor);
 
@@ -118,10 +216,17 @@ torch::Tensor online_softmax(const torch::Tensor &tensor) {
 
   auto out = torch::empty_like(tensor);
 
-  cudaError_t status = online_softmax_launch(
-      tensor.data_ptr<float>(), out.data_ptr<float>(), rows, cols, stream);
+  if (cols >= 2048) {
+    cudaError_t status = cluster_reduce::online_softmax_launch(
+        tensor.data_ptr<float>(), out.data_ptr<float>(), rows, cols, stream);
 
-  TORCH_CHECK(status == cudaSuccess, "online softmax failed");
+    TORCH_CHECK(status == cudaSuccess, "cluster reduce online softmax failed");
+  } else {
+    cudaError_t status = block_reduce::online_softmax_launch(
+        tensor.data_ptr<float>(), out.data_ptr<float>(), rows, cols, stream);
+
+    TORCH_CHECK(status == cudaSuccess, "block reduce online softmax failed");
+  }
 
   return out;
 }

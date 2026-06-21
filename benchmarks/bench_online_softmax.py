@@ -1,10 +1,10 @@
+import argparse
 import os
 
 import torch
 import triton
 import triton.testing
 from cudabox.elementwise import online_softmax as cudabox_online_softmax
-from cudabox.elementwise import sm90_online_softmax as cudabox_sm90_online_softmax
 from utils import DEFAULT_DEVICE, DEFAULT_DTYPE, run_benchmark
 
 # Rows (batch) are swept across separate plots; columns are swept on the
@@ -18,29 +18,36 @@ def torch_softmax(x):
 
 
 LINE_VALS = [
-    "cudabox_sm90_online_softmax",
     "cudabox_online_softmax",
     "torch_softmax",
 ]
 LINE_NAMES = [
-    "Cudabox SM90 Online Softmax",
     "Cudabox Online Softmax",
     "Torch Softmax",
 ]
 STYLES = [
-    ("black", "-"),
     ("blue", "--"),
     ("purple", "-."),
 ]
+
+# Populated when --sm90 is passed.
+INCLUDE_SM90 = False
 
 
 def _run(rows: int, cols: int, provider: str):
     input = torch.randn((rows, cols), dtype=DEFAULT_DTYPE, device=DEFAULT_DEVICE)
     FN_MAP = {
-        "cudabox_sm90_online_softmax": lambda: cudabox_sm90_online_softmax(input),
         "cudabox_online_softmax": lambda: cudabox_online_softmax(input),
         "torch_softmax": lambda: torch_softmax(input),
     }
+    if INCLUDE_SM90:
+        from cudabox.elementwise import (
+            sm90_online_softmax as cudabox_sm90_online_softmax,
+        )
+
+        FN_MAP["cudabox_sm90_online_softmax"] = lambda: cudabox_sm90_online_softmax(
+            input
+        )
     fn = FN_MAP[provider]
     return run_benchmark(fn)
 
@@ -63,6 +70,20 @@ def _make_benchmark(rows: int) -> triton.testing.Benchmark:
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
+
+    parser = argparse.ArgumentParser(description="Benchmark online softmax kernels.")
+    parser.add_argument(
+        "--sm90",
+        action="store_true",
+        help="Include the SM90 online softmax kernel in the benchmark.",
+    )
+    args = parser.parse_args()
+
+    if args.sm90:
+        INCLUDE_SM90 = True
+        LINE_VALS.insert(0, "cudabox_sm90_online_softmax")
+        LINE_NAMES.insert(0, "Cudabox SM90 Online Softmax")
+        STYLES.insert(0, ("black", "-"))
 
     out_dir = os.path.join(os.path.dirname(__file__), "results", "online_softmax")
     os.makedirs(out_dir, exist_ok=True)

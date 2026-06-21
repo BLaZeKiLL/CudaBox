@@ -272,8 +272,6 @@ __global__ __launch_bounds__(BLOCK_THREADS) void softmax_persistent_cute_kernel(
         ++rd_state;
       }
     }
-
-    __syncthreads();
   }
 }
 
