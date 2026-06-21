@@ -14,7 +14,10 @@ namespace elementwise {
 
 torch::Tensor softmax(const torch::Tensor &tensor);
 
-}
+torch::Tensor rmsnorm(const torch::Tensor &tensor, const torch::Tensor &gamma,
+                      const double eps);
+
+} // namespace elementwise
 
 namespace gemm {
 
