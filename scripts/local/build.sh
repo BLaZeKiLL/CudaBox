@@ -52,7 +52,9 @@ bold_status "INSTALLING BUILD DEPENDENCIES" "green"
 uv pip install "scikit-build-core>=0.11" wheel "torch>=2.7.0" triton numpy pre-commit pytest
 
 # Install pre-commit git hooks if a config exists and hooks aren't installed yet.
-if [ -f "$REPO_ROOT/.pre-commit-config.yaml" ] && \
+# Skip in CI (GitHub Actions sets CI=true) — no git hooks needed there.
+if [ -z "${CI:-}" ] && \
+   [ -f "$REPO_ROOT/.pre-commit-config.yaml" ] && \
    [ ! -f "$REPO_ROOT/.git/hooks/pre-commit" ]; then
   bold_status "INSTALLING PRE-COMMIT HOOKS" "green"
   (cd "$REPO_ROOT" && pre-commit install)
