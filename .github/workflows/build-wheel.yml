@@ -46,7 +46,7 @@ jobs:
         uses: lukka/get-cmake@latest
 
       - name: Install uv (with Python 3.12)
-        uses: astral-sh/setup-uv@v8
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           python-version: "3.12"
           # This repo has no uv.lock/requirements.txt — build deps are pinned
