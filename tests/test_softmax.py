@@ -7,7 +7,7 @@ import torch
 def test_softmax(N):
     A = torch.rand((N), device="cuda")
 
-    C_ref = torch.nn.Softmax(dim=0)(A)
+    C_ref = torch.softmax(A, dim=0)
     C = cudabox.elementwise.softmax(A)
 
     torch.testing.assert_close(C, C_ref, atol=1e-5, rtol=1e-5)

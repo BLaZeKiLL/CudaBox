@@ -58,21 +58,21 @@ __global__ __launch_bounds__(utils::THREADS_PER_BLOCK) void rmsnorm_kernel(
   block.sync();
 
   // block reduction
-  if (tid < utils::NUM_WARPS) {
-    auto sub_warps = cg::tiled_partition<utils::NUM_WARPS>(block);
-    float value = warp_sums[tid];
-    float block_sum_partial = cg::reduce(sub_warps, value, cg::plus<float>());
-    cg::invoke_one(sub_warps, [&] { block_sum = block_sum_partial; });
+  if (warp_id == 0) {
+    float value = tid < utils::NUM_WARPS ? warp_sums[tid] : 0.0f;
+    float block_sum_partial = cg::reduce(warp, value, cg::plus<float>());
+    cg::invoke_one(warp, [&] { block_sum = block_sum_partial; });
   }
   cluster.sync();
 
   // cluster reduction
-  if (tid < utils::BLOCKS_PER_CLUSTER) {
-    auto sub_warps = cg::tiled_partition<utils::BLOCKS_PER_CLUSTER>(block);
-    float value = tid == cluster.block_rank()
-                      ? block_sum
-                      : *cluster.map_shared_rank(&block_sum, tid);
-    float sum_squared = cg::reduce(sub_warps, value, cg::plus<float>());
+  if (warp_id == 0) {
+    float value = tid < utils::NUM_WARPS
+                      ? (tid == cluster.block_rank()
+                             ? block_sum
+                             : *cluster.map_shared_rank(&block_sum, tid))
+                      : 0.0f;
+    float sum_squared = cg::reduce(warp, value, cg::plus<float>());
     rms_factor = 1.0f / sqrtf(sum_squared / cols + eps);
   }
 

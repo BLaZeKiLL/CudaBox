@@ -1,6 +1,7 @@
 set(SOURCES
   "src/rmsnorm/rmsnorm.cu"
   "src/softmax/softmax.cu"
+  "src/online_softmax/online_softmax.cu"
   "src/elementwise_ops.cpp"
 )
 
