@@ -5,6 +5,41 @@ set -eo pipefail
 SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/")"
 source "$SCRIPT_DIR/../env.sh"
 
+CLEAN=0
+BUILD_TYPE="RelWithDebInfo"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --clean)
+      CLEAN=1
+      shift
+      ;;
+    --build-type)
+      BUILD_TYPE="$2"
+      shift 2
+      ;;
+    --build-type=*)
+      BUILD_TYPE="${1#*=}"
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: build.sh [--clean] [--build-type <type>]"
+      echo "  --clean              Delete build and dist folders before building"
+      echo "  --build-type <type>  CMake build type (default: RelWithDebInfo)"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+REPO_ROOT="$(realpath "$SCRIPT_DIR/../..")"
+if [ "$CLEAN" -eq 1 ]; then
+  bold_status "CLEANING BUILD AND DIST FOLDERS" "green"
+  rm -rf "$REPO_ROOT/build" "$REPO_ROOT/dist"
+fi
+
 VENV_PATH="$HOME/uv_venv/cudabox"
 if [ ! -d "$VENV_PATH" ]; then
   bold_status "CREATING UV VENV AT $VENV_PATH" "green"
@@ -17,16 +52,15 @@ bold_status "INSTALLING BUILD DEPENDENCIES" "green"
 uv pip install "scikit-build-core>=0.11" wheel "torch>=2.7.0" triton numpy pre-commit pytest
 
 # Install pre-commit git hooks if a config exists and hooks aren't installed yet.
-REPO_ROOT="$(realpath "$SCRIPT_DIR/../..")"
 if [ -f "$REPO_ROOT/.pre-commit-config.yaml" ] && \
    [ ! -f "$REPO_ROOT/.git/hooks/pre-commit" ]; then
   bold_status "INSTALLING PRE-COMMIT HOOKS" "green"
   (cd "$REPO_ROOT" && pre-commit install)
 fi
 
-bold_status "BUILDING CUDABOX" "green"
+bold_status "BUILDING CUDABOX (build-type: $BUILD_TYPE)" "green"
 uv build --wheel -Cbuild-dir=build . --verbose --color=always \
-  --no-build-isolation --config-settings=cmake.build-type="RelWithDebInfo"
+  --no-build-isolation --config-settings=cmake.build-type="$BUILD_TYPE"
 bold_status "BUILD COMPLETE" "green"
 ls dist
 

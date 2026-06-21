@@ -50,8 +50,6 @@ __global__ __launch_bounds__(utils::THREADS_PER_BLOCK) void histogram_kernel(
   // pass 2: warp reduction
   const unsigned int warp_id =
       warp.meta_group_rank(); // threadIdx.x / utils::THREADS_PER_WARP;
-  const unsigned int lane_id =
-      warp.thread_rank(); // threadIdx.x % utils::THREADS_PER_WARP;
 
   float warp_max = cg::reduce(warp, thread_max, cg::greater<float>());
 
@@ -61,6 +59,8 @@ __global__ __launch_bounds__(utils::THREADS_PER_BLOCK) void histogram_kernel(
   block.sync();
 
   if (tid < utils::NUM_WARPS) {
+    const unsigned int lane_id =
+        warp.thread_rank(); // threadIdx.x % utils::THREADS_PER_WARP;
     auto sub_group = cg::tiled_partition<utils::NUM_WARPS>(block);
     float value = smem.max_storage[lane_id];
     float block_max = cg::reduce(sub_group, value, cg::greater<float>());
@@ -189,11 +189,11 @@ cudaError_t histogram_launch(const float *input, int *output, int64_t size,
 torch::Tensor histogram(const torch::Tensor &tensor, int64_t num_bins) {
   TORCH_TENSOR_CHECK(tensor);
 
-  TORCH_CHECK(tensor.dim() == 1, "softmax only supports 1D tensors");
+  TORCH_CHECK(tensor.dim() == 1, "histogram only supports 1D tensors");
   TORCH_CHECK(tensor.is_contiguous(),
-              "softmax only supports contiguous tensors");
+              "histogram only supports contiguous tensors");
   TORCH_CHECK(tensor.scalar_type() == torch::kFloat32,
-              "softmax only supports float32 tensors");
+              "histogram only supports float32 tensors");
 
   auto device = tensor.device();
 

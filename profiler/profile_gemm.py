@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 from cudabox.gemm import sm90_pipelined_tma_mma_gemm
 
@@ -35,8 +37,21 @@ def main():
     # Square problem at the typical "training-shape sweet-spot" size used by
     # the bench. M, N must satisfy the kernel's TMA alignment (N is mul of 8
     # for fp16; M has no alignment constraint); K must be a mul of 8.
-    M, N, K = 4096, 4096, 4096
-    dtype = torch.float16
+    parser = argparse.ArgumentParser(
+        description="Profile the SM90 pipelined TMA+WGMMA GEMM."
+    )
+    parser.add_argument("--M", type=int, default=4096)
+    parser.add_argument("--N", type=int, default=4096, help="mul of 8 (fp16)")
+    parser.add_argument("--K", type=int, default=4096, help="mul of 8")
+    parser.add_argument(
+        "--dtype",
+        choices=["float16", "bfloat16"],
+        default="float16",
+    )
+    args = parser.parse_args()
+
+    M, N, K = args.M, args.N, args.K
+    dtype = getattr(torch, args.dtype)
 
     torch.manual_seed(0)
     # A is (M, K) row-major; B is (N, K) row-major (kernel computes A @ B^T).

@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 from cudabox.elementwise import softmax
 
@@ -29,7 +31,11 @@ ncu --set full \
 
 
 def main():
-    N = 1 << 20  # pick a representative size; tweak per workload
+    parser = argparse.ArgumentParser(description="Profile the softmax kernel.")
+    parser.add_argument("--size", type=int, default=1 << 20, help="length (N)")
+    args = parser.parse_args()
+
+    N = args.size
     torch.manual_seed(0)
     x = torch.randn(N, dtype=torch.float32, device="cuda")
 
