@@ -37,20 +37,24 @@ jobs:
             ninja-build \
             git \
             curl \
+            unzip \
             ca-certificates
           clang --version
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up recent CMake + Ninja
         # Ensure a CMake new enough to support CUDA 13.0.
         uses: lukka/get-cmake@latest
 
       - name: Install uv (with Python 3.12)
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.12"
+          # This repo has no uv.lock/requirements.txt — build deps are pinned
+          # inside build.sh, so key the uv cache off that file.
+          cache-dependency-glob: "scripts/local/build.sh"
 
       - name: Build wheel
         run: |
@@ -58,7 +62,7 @@ jobs:
           bash scripts/local/build.sh
 
       - name: Upload wheel artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cudabox-wheel
           path: dist/*.whl
@@ -82,7 +86,7 @@ jobs:
 
     steps:
       - name: Download wheel artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: cudabox-wheel
           path: dist
