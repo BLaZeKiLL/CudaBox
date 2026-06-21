@@ -163,8 +163,9 @@ Python benchmarks use the `triton.testing` harness and write results (and plots)
 to `benchmarks/results/`:
 
 ```bash
-python -m benchmarks.bench_softmax
-python -m benchmarks.bench_gemm
+# Need to be executed from the repo root
+python ./benchmarks/bench_softmax.py
+python ./benchmarks/bench_gemm.py
 ```
 
 Optional C++ microbenchmarks (nvbench) for GEMM can be enabled at configure time
